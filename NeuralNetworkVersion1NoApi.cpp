@@ -77,34 +77,49 @@ template <typename T>
 class InputHandle : public NeuralNetwork<T> {
 public:
     class RawInput {
-        std::unique_ptr<std::vector<T>> x1;
-        std::unique_ptr<std::vector<T>> x2;
-        std::unique_ptr<std::vector<T>> x3;
-        std::unique_ptr<std::vector<T>> rawData;
+        std::vector<T>* x1;
+        std::vector<T>* x2;
+        std::vector<T>* x3;
+        std::vector<T>* rawData;
     public:
-        RawInput() {
-            rawData = std::make_unique<std::vector<T>>();
+        RawInput():
+         x1(new std::vector<T>()),
+         x2(new std::vector<T>()), 
+         x3(new std::vector<T>()),rawData(new std::vector<T>()) {
             T dataRaw{};
             while (std::cin >> dataRaw) {
                 rawData->push_back(dataRaw);
             }
-        }
-        void Input(std::vector<T>& out_x1, std::vector<T>& out_x2, std::vector<T>& out_x3) {
-            out_x1.clear();
-            out_x2.clear();
-            out_x3.clear();
-
-            for (int i = 0; i < rawData->size(); i++) {
-                if (i % 3 == 0) {
-                    out_x1.push_back((*rawData)[i]);
-                }  
-                else if (i % 3 == 1) {
-                    out_x2.push_back((*rawData)[i]);
+            x1->reserve(rawData->size() / 3 + 1);
+            x2->reserve(rawData->size() / 3 + 1);
+            x3->reserve(rawData->size() / 3 + 1);
+            for (int i = 0; i < rawData->size(); i += 3) {
+                x1->push_back((*rawData)[i]);
+                if (i + 1 < rawData->size()) {
+                    x2->push_back((*rawData)[i + 1]);
                 }
-                else if (i % 3 == 2) {
-                    out_x3.push_back((*rawData)[i]);
+                if (i + 2 < rawData->size()) {
+                    x3->push_back((*rawData)[i + 2]);
                 }
             }
+        }
+
+        T Input(std::vector<T>& x1_out, std::vector<T>& x2_out, std::vector<T>& x3_out) {
+            x1_out.reserve(x1->size());
+            x2_out.reserve(x2->size());
+            x3_out.reserve(x3->size());
+            x1_out = *x1;
+            x2_out = *x2;
+            x3_out = *x3;
+
+            return T();
+        }
+
+        ~RawInput() {
+            delete x1;
+            delete x2;
+            delete x3;
+            delete rawData;
         }
     };
     T Input() override {
