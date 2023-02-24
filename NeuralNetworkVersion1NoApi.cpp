@@ -96,13 +96,13 @@ public:
 
             for (int i = 0; i < rawData->size(); i++) {
                 if (i % 3 == 0) {
-                    out_x1.push_back(rawData->get(i));
+                    out_x1.push_back((*rawData)[i]);
                 }  
                 else if (i % 3 == 1) {
-                    out_x2.push_back(rawData->get(i));
+                    out_x2.push_back((*rawData)[i]);
                 }
                 else if (i % 3 == 2) {
-                    out_x3.push_back(rawData->get(i));
+                    out_x3.push_back((*rawData)[i]);
                 }
             }
         }
