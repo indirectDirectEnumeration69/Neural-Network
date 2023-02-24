@@ -37,7 +37,6 @@ public:
     }
 
     void CheckOrganisation() override {
-        // implementation goes here
     }
 };
 
@@ -45,7 +44,6 @@ template <typename T>
 class Neuron : public NeuralNetwork<T> {
 public:
     void CheckOrganisation() override {
-        // implementation goes here
     }
 
     void NeuronGeneration() override {
