@@ -19,7 +19,7 @@
 template <typename T>
 class NeuralNetwork {
 public:
-    virtual T Input() = 0;
+    virtual std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() = 0;
     virtual T InputHandler() = 0;
     virtual T LayerGeneration() = 0;
     virtual T LayerOrganiser() = 0;
@@ -37,6 +37,7 @@ public:
     }
 
     void CheckOrganisation() override {
+        // implementation goes here
     }
 };
 
@@ -44,6 +45,7 @@ template <typename T>
 class Neuron : public NeuralNetwork<T> {
 public:
     void CheckOrganisation() override {
+        // implementation goes here
     }
 
     void NeuronGeneration() override {
@@ -53,14 +55,11 @@ template <typename T>
 class NodeMain {
 public:
     struct NodeSystem {
-  
-
         struct NodeTypes {
             struct LayerNode {
                 int layerId;
                 std::vector<int> neuronIds;
             };
-
             struct NeuronNode {
                 int neuronId;
                 std::vector<int> inputIds;
@@ -72,20 +71,45 @@ public:
         };
     };
 };
-
-template <typename T>
+enum class ChangeHandle{
+    Passive,
+    Active,
+    Agressive
+};
+enum class Status{
+    Ready,
+    NotReady,
+    Error,
+    Unknown
+};
+template<typename T>
 class InputHandle : public NeuralNetwork<T> {
 public:
-    class RawInput {
+    class RawInput : public NeuralNetwork<T> {
         std::vector<T>* x1;
         std::vector<T>* x2;
         std::vector<T>* x3;
         std::vector<T>* rawData;
     public:
-        RawInput():
-         x1(new std::vector<T>()),
-         x2(new std::vector<T>()), 
-         x3(new std::vector<T>()),rawData(new std::vector<T>()) {
+        T InputHandler()override {
+            return T();
+        }
+        T LayerGeneration()override {
+            return T();
+        }
+        T LayerOrganiser()override {
+            return T();
+        }
+        T CheckOrganisation()override {
+            return T();
+        }
+        T NeuronGeneration()override {
+            return T();
+        }
+        RawInput() :
+            x1(new std::vector<T>()),
+            x2(new std::vector<T>()),
+            x3(new std::vector<T>()), rawData(new std::vector<T>()) {
             T dataRaw{};
             while (std::cin >> dataRaw) {
                 rawData->push_back(dataRaw);
@@ -98,21 +122,16 @@ public:
                 if (i + 1 < rawData->size()) {
                     x2->push_back((*rawData)[i + 1]);
                 }
+                else {
+                    x2->push_back(T());
+                }
                 if (i + 2 < rawData->size()) {
                     x3->push_back((*rawData)[i + 2]);
                 }
+                else {
+                    x3->push_back(T());
+                }
             }
-        }
-
-        T Input(std::vector<T>& x1_out, std::vector<T>& x2_out, std::vector<T>& x3_out) {
-            x1_out.reserve(x1->size());
-            x2_out.reserve(x2->size());
-            x3_out.reserve(x3->size());
-            x1_out = *x1;
-            x2_out = *x2;
-            x3_out = *x3;
-
-            return T();
         }
 
         ~RawInput() {
@@ -121,33 +140,51 @@ public:
             delete x3;
             delete rawData;
         }
+        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> GetData() const {
+            return std::make_tuple(*x1, *x2, *x3);
+        }
+             std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() override {
+            return std::make_tuple(*x1, *x2, *x3);
+        }
+
     };
-    T Input() override {
-        return T();
-    }
-    T InputHandler() override {
-        RawInput rawInput{};
-        std::vector<T> x1, x2, x3;
-        rawInput.Input(x1, x2, x3);
-        return T();
-    }
-    enum class ChangeHandle {
-        Passive,
-        Active,
-        Agressive
-    };
-    enum class Status {
-        Ready,
-        NotReady,
-        Error,
-        Unknown
+
+    class InputSystem : public RawInput {
+    public:
+        std::vector<T>* x1;
+        std::vector<T>* x2;
+        std::vector<T>* x3;
+        InputSystem() :
+            RawInput(),
+            x1(new std::vector<T>()),
+            x2(new std::vector<T>()),
+            x3(new std::vector<T>())
+        {
+            std::tie(*x1, *x2, *x3) = RawInput::GetData();
+        }
+
+        ~InputSystem() {
+            delete x1;
+            delete x2;
+            delete x3;
+        }
+
+        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() override {
+            RawInput rawInput{};
+            std::vector<T> x1, x2, x3;
+            std::tie(x1, x2, x3) = rawInput.GetData();
+            return std::make_tuple(x1, x2, x3);
+        }
     };
     InputHandle(Status change, ChangeHandle handleChanged) {
         switch (change) {
         case Status::Ready: {
-            RawInput rawInput{};
+            InputSystem* inputSystem = new InputSystem();
+            InputSystem& inputSystemRef = *inputSystem;
+            inputSystemRef = InputSystem();
+
             std::vector<T> x1, x2, x3;
-            rawInput.Input(x1, x2, x3);
+            std::tie(x1, x2, x3) = inputSystemRef.Input();
             break;
         }
         case Status::NotReady:
@@ -155,6 +192,7 @@ public:
         default:
             break;
         }
+
         switch (handleChanged) {
         case ChangeHandle::Passive:
             break;
@@ -167,11 +205,13 @@ public:
             break;
         }
     }
+ 
+
 };
 template <typename T>
 class IntInputHandle : public InputHandle<T> {
 public:
-    IntInputHandle(typename InputHandle<T>::Status change, typename InputHandle<T>::ChangeHandle handleChanged):InputHandle<T>(change, handleChanged) {}
+    IntInputHandle(Status change,ChangeHandle handleChanged):InputHandle<T>(change, handleChanged) {}
     T LayerGeneration() override {
         return T();
     }
@@ -187,11 +227,8 @@ public:
     T NeuronGeneration() override {
         return T();
     }
-
-    T Input() override {
-        
-
-        return T();
+    std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() override {
+        return std::make_tuple(std::vector<T>(), std::vector<T>(), std::vector<T>());
     }
 
     T InputHandler() override {
@@ -200,7 +237,7 @@ public:
 };
 int main()
 {
-    IntInputHandle<int>* inputHandle = new IntInputHandle<int>(InputHandle<int>::Status::Ready, InputHandle<int>::ChangeHandle::Active);
+    IntInputHandle<int>* inputHandle = new IntInputHandle<int>(Status::Ready,ChangeHandle::Active);
 
     return 0;
 }
