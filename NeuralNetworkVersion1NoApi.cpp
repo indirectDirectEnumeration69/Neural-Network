@@ -97,7 +97,7 @@ public:
 };
 //
 template <typename T>
-class NeuralNetwork{
+class NeuralNetwork {
 public:
     enum class NeuralMode
     {
@@ -115,7 +115,14 @@ public:
         Error,
         Unknown
     };
+
+private:
+    Status change;
+    ChangeHandle handleChanged;
+
 public:
+    NeuralNetwork(Status change, ChangeHandle handleChanged) : change(change), handleChanged(handleChanged) {}
+
     virtual std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() = 0;
     virtual T InputHandler() = 0;
     virtual T LayerGeneration() = 0;
@@ -221,7 +228,7 @@ public:
         }
     };
 };
-template<typename T>
+template <typename T>
 class InputHandle : public NeuralNetwork<T> {
 public:
     InputHandle(NeuralNetwork<T>::Status change, NeuralNetwork<T>::ChangeHandle handleChanged)
