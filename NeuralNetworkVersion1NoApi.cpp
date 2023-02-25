@@ -95,8 +95,9 @@ public:
         std::unique_ptr<HijackManager> hijack_manager;
     };
 };
+//
 template <typename T>
-class NeuralNetwork {
+class NeuralNetwork{
 public:
     enum class NeuralMode
     {
@@ -126,17 +127,18 @@ public:
     virtual T SaveModel() = 0;
 
     struct additionalCoreIntegration {
-        virtual void Activation() = 0;
-        virtual void Loss() = 0;
-        virtual void Optimisation() = 0;
-        virtual void FeedForwards() = 0;
-        virtual void BackPropogation() = 0;
-        virtual void UpdateWeights() = 0;
-        virtual void UpdateBiases() = 0;
-        virtual void PerformanceEval() = 0;
-        virtual void TrainingLoopSet() = 0;
+        virtual T Activation() = 0;
+        virtual T Loss() = 0;
+        virtual T Optimisation() = 0;
+        virtual T FeedForwards() = 0;
+        virtual T BackPropogation() = 0;
+        virtual T UpdateWeights() = 0;
+        virtual T UpdateBiases() = 0;
+        virtual T PerformanceEval() = 0;
+        virtual T TrainingLoopSet() = 0;
     };
-    class IntegratedThreadSystem {
+    //
+    class IntegratedThreadSystem:NeuralNetwork{
     public:
         IntegratedThreadSystem() : stop_requested(false), num_threads(std::thread::hardware_concurrency()) {
             for (int i = 0; i < num_threads; ++i) {
@@ -222,6 +224,9 @@ public:
 template<typename T>
 class InputHandle : public NeuralNetwork<T> {
 public:
+    InputHandle(NeuralNetwork<T>::Status change, NeuralNetwork<T>::ChangeHandle handleChanged)
+        : NeuralNetwork<T>(change, handleChanged) {}
+    template<typename T>
     class RawInput : public NeuralNetwork<T> {
         std::vector<T>* x1;
         std::vector<T>* x2;
@@ -276,72 +281,39 @@ public:
             delete x2;
             delete x3;
             delete rawData;
-        }  std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() override {
+        }
+
+        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() override {
             return GetData();
         }
 
         std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> GetData() const {
             return std::make_tuple(*x1, *x2, *x3);
         }
-    };template<typename T>
-    class InputSystem : public RawInput {
+    };
+    template<typename T>
+    class InputSystem : public RawInput<T> {
     public:
-        std::vector<T>* x1;
-        std::vector<T>* x2;
-        std::vector<T>* x3;
+        std::vector<T> x1;
+        std::vector<T> x2;
+        std::vector<T> x3;
         InputSystem() :
-            RawInput(),
-            x1(new std::vector<T>()),
-            x2(new std::vector<T>()),
-            x3(new std::vector<T>())
+            RawInput<T>(),
+            x1(),
+            x2(),
+            x3()
         {
-            std::tie(*x1, *x2, *x3) = RawInput::GetData();
+            std::tie(x1, x2, x3) = RawInput<T>::GetData();
         }
+
         std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> GetData() const {
-            return std::make_tuple(*x1, *x2, *x3);
-        }
-        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() override {
-            return std::make_tuple(*x1, *x2, *x3);
-        }
-        ~InputSystem() {
-            delete x1;
-            delete x2;
-            delete x3;
-        }
-        /*
-        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() override {
-            RawInput rawInput{};
-            std::vector<T> x1, x2, x3;
-            std::tie(x1, x2, x3) = rawInput.GetData();
             return std::make_tuple(x1, x2, x3);
         }
-        */
+
+        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() override {
+            return std::make_tuple(x1, x2, x3);
+        }
     };
-    InputHandle(NeuralNetwork<T>::Status change, NeuralNetwork<T>::ChangeHandle handleChanged) {
-        switch (change) {
-        case NeuralNetwork<int>::Status::Ready: {
-            InputSystem inputSystem{};
-            std::vector<T> x1, x2, x3;
-            std::tie(x1, x2, x3) = inputSystem.Input();
-            break;
-        }
-        case NeuralNetwork<int>::Status::NotReady:
-            break;
-        default:
-            break;
-        }
-        switch (handleChanged) {
-        case NeuralNetwork<int>::ChangeHandle::Passive:
-            break;
-        case NeuralNetwork<int>::ChangeHandle::Active:
-            break;
-        case NeuralNetwork<int>::ChangeHandle::Agressive:
-            break;
-        default:
-            handleChanged = NeuralNetwork<int>::ChangeHandle::Active;
-            break;
-        }
-    }
 };
 template <typename T>
 class Neuron : public NeuralNetwork<T> {
@@ -350,10 +322,24 @@ public:
     double bias;
     std::vector<int> inputIds;
     int neuronId;
+    InputHandle::RawInput<T>* inputHand;
 
-    Neuron() : weight(0), bias(0), neuronId(0) {}
+    Neuron() : weight(0), bias(0), neuronId(0), inputHand(nullptr) {}
 
-    T NeuronGeneration() override {
+    T GetInitialInput() {
+        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> GotDataInput = inputHand->GetData();
+        std::vector<T> x1, x2, x3;
+        std::tie(x1, x2, x3) = GotDataInput;
+        int DataSize = x1.size();
+        bool* inputFlagCheck = new bool[DataSize];
+        inputIds.resize(DataSize);
+        for (int i = 0; i < DataSize; ++i) {
+            inputIds[i] = i;
+            inputFlagCheck[i] = false;
+        }
+        return T();
+    }
+    T NeuronGeneration(T inputId) override {
         std::vector<std::shared_ptr<Neuron<T>>> neurons1;
         std::vector<std::shared_ptr<Neuron<T>>> neurons2;
         std::vector<std::shared_ptr<Neuron<T>>> neurons3;
@@ -368,27 +354,28 @@ public:
         return std::make_tuple(neurons1, neurons2, neurons3, neurons4);
     }
     T CheckOrganisation() override {
-        Neuron<T()> neuron;
+        Neuron<T> neuron;
         auto [neurons1, neurons2, neurons3, neurons4] = neuron.NeuronGeneration();
-        auto checkNeuron = [](const std::shared_ptr<Neuron<double>>& neuron) {
+        auto checkNeuron = [](const std::shared_ptr<Neuron<T>>& neuron) {
             std::vector<std::shared_ptr<Neuron<T>>> neuronstoreBadVecs;
             std::vector<std::shared_ptr<Neuron<T>>> neuronstoreFineVecs;
             if (neuron->weight == 0.0 || neuron->bias == 0.0) {
                 neuronstoreBadVecs.push_back(neuron);
             }
             else {
-                neuronstoreFineVecs.push_back(neuron);
+                neuronstoreFineVecs.push_back(neuron);//line 352
             }
-            for (auto inputId : neuron->inputIds) {
-                auto input = GetInitalInput(inputId);
-                InputHandle<T> inputHandle(NeuralNetwork<T>::Status::Ready, NeuralNetwork<int>::ChangeHandle::Passive);
-                auto [x1, x2, x3] = inputHandle.GetData();
-                std::vector<T> dataRaw = *inputHandle.rawData;
-                std::cout << "Input weight: " << input->weight << "\n";
-                std::cout << "Input bias: " << input->bias << "\n";
-            }
+             for (T inputId : neuron->inputIds) {
+               auto input = GetInitalInput(inputId);
+               InputHandle<T> inputHandle(NeuralNetwork<T>::Status::Ready, NeuralNetwork<double>::ChangeHandle::Passive);
+               
+               auto [x1, x2, x3] = inputHandle.GetData();
+               std::vector<T> dataRaw = *inputHandle.rawData;
+               std::cout << "Input weight: " << input->weight << "\n";
+               std::cout << "Input bias: " << input->bias << "\n";
+            }//line 361
 
-        };
+        };//line 363
         iterateNeurons(neurons1, checkNeuron);
         iterateNeurons(neurons2, checkNeuron);
         iterateNeurons(neurons3, checkNeuron);
@@ -428,8 +415,8 @@ public:
                 }
             }
         }
-        std::vector<NodeTypes::LayerNode> LayersNode;
-        std::vector<NodeTypes::NeuronNode> NeuronsNode;
+        std::vector<typename NodeTypes::LayerNode> LayersNode;
+        std::vector<typename NodeTypes::NeuronNode> NeuronsNode;
     };
 };
 template <typename T>
@@ -469,7 +456,8 @@ public:
 template <typename T>
 class TypeInputHandle : public InputHandle<T> {
 public:
-    using InputHandle<T>::InputHandle;
+    TypeInputHandle(NeuralNetwork<T>::Status change, NeuralNetwork<T>::ChangeHandle handleChanged) : InputHandle<T>(change, handleChanged) {}
+
     T LayerGeneration() override {
         return T();
     }
@@ -503,7 +491,6 @@ public:
         return T();
     }
 };
-
 int main()
 {
     TypeInputHandle<int>* inputHandle = new TypeInputHandle<int>(NeuralNetwork<int>::Status::Ready, NeuralNetwork<int>::ChangeHandle::Active);
