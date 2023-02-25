@@ -363,7 +363,7 @@ public:
                 neuronstoreBadVecs.push_back(neuron);
             }
             else {
-                neuronstoreFineVecs.push_back(neuron);//line 352
+                neuronstoreFineVecs.push_back(neuron);
             }
              for (T inputId : neuron->inputIds) {
                auto input = GetInitalInput(inputId);
@@ -373,9 +373,9 @@ public:
                std::vector<T> dataRaw = *inputHandle.rawData;
                std::cout << "Input weight: " << input->weight << "\n";
                std::cout << "Input bias: " << input->bias << "\n";
-            }//line 361
+            }
 
-        };//line 363
+        };
         iterateNeurons(neurons1, checkNeuron);
         iterateNeurons(neurons2, checkNeuron);
         iterateNeurons(neurons3, checkNeuron);
