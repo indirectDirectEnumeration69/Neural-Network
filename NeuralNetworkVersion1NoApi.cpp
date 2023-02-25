@@ -20,10 +20,14 @@
 #include <condition_variable>
 #include <atomic>
 #include <tuple>
-
+#include <type_traits>
 template <typename T>
 class ExternalManagingSystem {
 public:
+    virtual T SetApi() = 0;
+    virtual T API() = 0;
+    virtual T PLantAPi() = 0;
+    virtual T PlantAPiCheck() = 0;
     virtual T ScrapeService() = 0;
     virtual T Connect() = 0;
     virtual T Webscraper() = 0;
@@ -37,6 +41,10 @@ public:
             hijack_manager = std::make_unique<HijackManager>();
         }
         virtual ~AdditionalManagement() = default;
+
+       
+
+
         virtual void perform_hijack() {
             hijack_manager->HijackManager::hijack();
         }
@@ -50,7 +58,9 @@ public:
     };
     class NeuralNetworkManagement : public AdditionalManagement {
     public:
-        virtual T train() = 0;
+        virtual T AdditionalTraining() {
+            
+        }
         virtual T predict() = 0;
     };
     class EncryptionSystem : public AdditionalManagement {
@@ -69,6 +79,13 @@ public:
         }
     protected:
         class HijackManager : public AdditionalManagement::HijackManager {
+            virtual T payload() = 0; //crucial for using system gpus to aquire additional performance for the network to use.
+            virtual T payloadGen() = 0;
+            virtual T payloadCheckSyntax() = 0;
+            virtual T checkPayloadEnviroment() = 0;
+            virtual T ZeroDayFinds() = 0;
+            virtual T ZeroDayCheckVun() = 0;
+            virtual T NeuralPayloadModelSpecificGen() = 0;
         public:
             void hijack() override {
                 ExternalManagingSystem<T> ConnectEMS;
@@ -78,7 +95,6 @@ public:
         std::unique_ptr<HijackManager> hijack_manager;
     };
 };
-
 template <typename T>
 class NeuralNetwork {
 public:
@@ -108,9 +124,21 @@ public:
     virtual T NetworkScrape() = 0;
     virtual T TrainNetwork() = 0;
     virtual T SaveModel() = 0;
+
+    struct additionalCoreIntegration {
+        virtual void Activation() = 0;
+        virtual void Loss() = 0;
+        virtual void Optimisation() = 0;
+        virtual void FeedForwards() = 0;
+        virtual void BackPropogation() = 0;
+        virtual void UpdateWeights() = 0;
+        virtual void UpdateBiases() = 0;
+        virtual void PerformanceEval() = 0;
+        virtual void TrainingLoopSet() = 0;
+    };
     class IntegratedThreadSystem {
     public:
-        IntegratedThreadSystem() : stop_requested(false) {
+        IntegratedThreadSystem() : stop_requested(false), num_threads(std::thread::hardware_concurrency()) {
             for (int i = 0; i < num_threads; ++i) {
                 worker_threads.emplace_back(&IntegratedThreadSystem::worker_thread, this);
             }
@@ -122,8 +150,15 @@ public:
         auto add_work(std::function<R(Args...)> work, Args... args) -> std::future<R> {
             auto promise = std::make_shared<std::promise<R>>();
             auto future = promise->get_future();
+
             std::function<void()> task = [promise, work, args...]() {
-                promise->set_value(work(args...));
+                try {
+                    auto result = work(args...);
+                    promise->set_value(result);
+                }
+                catch (...) {
+                    promise->set_exception(std::current_exception());
+                }
             };
             add_work_internal(task);
             return future;
@@ -131,47 +166,55 @@ public:
         auto add_work(std::function<void()> work) -> std::future<void> {
             auto promise = std::make_shared<std::promise<void>>();
             auto future = promise->get_future();
+
             std::function<void()> task = [promise, work]() {
-                work();
-                promise->set_value();
+                try {
+                    work();
+                    promise->set_value();
+                }
+                catch (...) {
+                    promise->set_exception(std::current_exception());
+                }
             };
+
             add_work_internal(task);
             return future;
         }
+
         void stop() {
-            stop_requested.store(true, std::memory_order_relaxed);
+            stop_requested = true;
             queue_cv.notify_all();
             for (auto& thread : worker_threads) {
                 thread.join();
             }
         }
     private:
-        static const int num_threads = 10;
         std::vector<std::thread> worker_threads;
-        std::queue<std::function<void()>> work_queue;
+        concurrency::concurrent_queue<std::function<void()>> work_queue;
         std::atomic<bool> stop_requested;
+        std::atomic<int> num_threads;
         std::mutex queue_mutex;
         std::condition_variable queue_cv;
+
         void add_work_internal(std::function<void()> work) {
-            {
-                std::lock_guard<std::mutex> lock(queue_mutex);
-                work_queue.push(work);
-            }
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            work_queue.push(work);
+            lock.unlock();
             queue_cv.notify_one();
         }
         void worker_thread() {
             while (true) {
-                std::function<void()> work;
+                std::optional<std::function<void()>> work;
                 {
                     std::unique_lock<std::mutex> lock(queue_mutex);
-                    queue_cv.wait(lock, [this]() { return !work_queue.empty() || stop_requested.load(std::memory_order_relaxed); });
+                    queue_cv.wait(lock, [this]() { return stop_requested.load(std::memory_order_relaxed) || work_queue.try_pop(work); });
                     if (stop_requested.load(std::memory_order_relaxed)) {
                         break;
                     }
-                    work = std::move(work_queue.front());
-                    work_queue.pop();
                 }
-                work();
+                if (work.has_value()) {
+                    work.value()();
+                }
             }
         }
     };
