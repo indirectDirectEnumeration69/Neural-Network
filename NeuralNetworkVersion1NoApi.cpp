@@ -20,6 +20,65 @@
 #include <condition_variable>
 #include <atomic>
 #include <tuple>
+
+template <typename T>
+class ExternalManagingSystem {
+public:
+    virtual T ScrapeService() = 0;
+    virtual T Connect() = 0;
+    virtual T Webscraper() = 0;
+    virtual T ConnectionCheck() = 0;
+    virtual T ScrapeServiceChceck() = 0;
+    virtual T serviceCheckStatus() = 0;
+
+    class AdditionalManagement {
+    public:
+        AdditionalManagement() {
+            hijack_manager = std::make_unique<HijackManager>();
+        }
+        virtual ~AdditionalManagement() = default;
+        virtual void perform_hijack() {
+            hijack_manager->HijackManager::hijack();
+        }
+    protected:
+        class HijackManager {
+        public:
+            virtual ~HijackManager() = default;
+            virtual void hijack() = 0;
+        };
+        std::unique_ptr<HijackManager> hijack_manager;
+    };
+    class NeuralNetworkManagement : public AdditionalManagement {
+    public:
+        virtual T train() = 0;
+        virtual T predict() = 0;
+    };
+    class EncryptionSystem : public AdditionalManagement {
+    public:
+        virtual T encryptionSetup() = 0;
+        virtual T encryptionCheck() = 0;
+        virtual T encryptionCheckStatus() = 0;
+        virtual T EncryptionChoice() = 0;
+        virtual T CreateKey() = 0;
+        virtual T KeyCheck() = 0;
+        virtual T EncryptKey() = 0;
+        virtual T CheckKeyEncryptionStatus() = 0;
+
+        void perform_hijack() override {
+            hijack_manager->HijackManager::hijack();
+        }
+    protected:
+        class HijackManager : public AdditionalManagement::HijackManager {
+        public:
+            void hijack() override {
+                ExternalManagingSystem<T> ConnectEMS;
+                ConnectEMS.Connect();
+            }
+        };
+        std::unique_ptr<HijackManager> hijack_manager;
+    };
+};
+
 template <typename T>
 class NeuralNetwork {
 public:
@@ -46,6 +105,9 @@ public:
     virtual T LayerOrganiser() = 0;
     virtual T CheckOrganisation() = 0;
     virtual T NeuronGeneration() = 0;
+    virtual T NetworkScrape() = 0;
+    virtual T TrainNetwork() = 0;
+    virtual T SaveModel() = 0;
     class IntegratedThreadSystem {
     public:
         IntegratedThreadSystem() : stop_requested(false) {
@@ -84,7 +146,7 @@ public:
             }
         }
     private:
-        static const int num_threads = 4;
+        static const int num_threads = 10;
         std::vector<std::thread> worker_threads;
         std::queue<std::function<void()>> work_queue;
         std::atomic<bool> stop_requested;
@@ -138,6 +200,7 @@ public:
         T NeuronGeneration()override {
             return T();
         }
+
         RawInput() :
             x1(new std::vector<T>()),
             x2(new std::vector<T>()),
@@ -385,6 +448,15 @@ public:
     }
 
     T InputHandler() override {
+        return T();
+    }
+    T NetworkScrape() override {
+        return T();
+    }
+    T TrainNetwork() override {
+        return T();
+    }
+    T SaveModel() override {
         return T();
     }
 };
