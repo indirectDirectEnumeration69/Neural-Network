@@ -1,3 +1,5 @@
 # Neural-Network
 
-- 8/
+- 
+
+8\
