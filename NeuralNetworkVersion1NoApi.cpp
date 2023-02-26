@@ -21,6 +21,7 @@
 #include <atomic>
 #include <tuple>
 #include <type_traits>
+#include <variant>
 template <typename T>
 class ExternalManagingSystem {
 public:
@@ -41,10 +42,6 @@ public:
             hijack_manager = std::make_unique<HijackManager>();
         }
         virtual ~AdditionalManagement() = default;
-
-       
-
-
         virtual void perform_hijack() {
             hijack_manager->HijackManager::hijack();
         }
@@ -133,26 +130,40 @@ public:
     virtual T TrainNetwork() = 0;
     virtual T SaveModel() = 0;
 
-    struct additionalCoreIntegration {
-        virtual T Activation() = 0;
-        virtual T Loss() = 0;
-        virtual T Optimisation() = 0;
-        virtual T FeedForwards() = 0;
-        virtual T BackPropogation() = 0;
-        virtual T UpdateWeights() = 0;
-        virtual T UpdateBiases() = 0;
-        virtual T PerformanceEval() = 0;
-        virtual T TrainingLoopSet() = 0;
+
+    struct ThreadDynamicOptimisationSystem {
+        bool Optimise = false;
+        virtual T ThreadDynamicOptimisation() = 0;
+
     };
-    //
-    class IntegratedThreadSystem:NeuralNetwork{
-    public:
-        IntegratedThreadSystem() : stop_requested(false), num_threads(std::thread::hardware_concurrency()) {
+    struct additionalCoreIntegration {
+        virtual T NetworkFeedForward() = 0;
+        virtual T NetworkBackPropogation() = 0;
+        virtual T TotalWeights() = 0;
+        virtual T TotalBiases() = 0;
+        virtual T SetTrainingLoop() = 0;
+        virtual T PerformanceEvalNeuronTotal() = 0;
+        virtual T NeuralTrainingLoopSet() = 0;
+    };
+}; // 
+
+template <typename T>
+class IntegratedThreadSystem :NeuralNetwork<T> {
+    NeuralNetwork<T>::ThreadDynamicOptimisationSystem::Optimise ThreadOptimisation = false;
+public:
+    IntegratedThreadSystem() : stop_requested(false), num_threads(std::thread::hardware_concurrency()) {
+        worker_threads.reserve(num_threads);
+        if (ThreadOptimisation == false) {
             for (int i = 0; i < num_threads; ++i) {
                 worker_threads.emplace_back(&IntegratedThreadSystem::worker_thread, this);
             }
         }
-        ~IntegratedThreadSystem() {
+        else if (ThreadOptimisation) {
+            for (int i = 0; i < worker_threads.size(); ++i) {
+                ThreadDynamicOptimisation();
+            }
+        }
+    }~IntegratedThreadSystem() {
             stop();
         }
         template<typename R, typename... Args>
@@ -197,108 +208,118 @@ public:
                 thread.join();
             }
         }
-    private:
-        std::vector<std::thread> worker_threads;
-        concurrency::concurrent_queue<std::function<void()>> work_queue;
-        std::atomic<bool> stop_requested;
-        std::atomic<int> num_threads;
-        std::mutex queue_mutex;
-        std::condition_variable queue_cv;
+protected:
+    T ThreadDynamicOptimisation() override {
+        return T();
+    }
+private:
+    std::vector<std::thread> worker_threads;
+    concurrency::concurrent_queue<std::function<void()>> work_queue;
+    std::atomic<bool> stop_requested;
+    std::atomic<int> num_threads;
+    std::mutex queue_mutex;
+    std::condition_variable queue_cv;
 
-        void add_work_internal(std::function<void()> work) {
-            std::unique_lock<std::mutex> lock(queue_mutex);
-            work_queue.push(work);
-            lock.unlock();
-            queue_cv.notify_one();
-        }
-        void worker_thread() {
-            while (true) {
-                std::optional<std::function<void()>> work;
-                {
-                    std::unique_lock<std::mutex> lock(queue_mutex);
-                    queue_cv.wait(lock, [this]() { return stop_requested.load(std::memory_order_relaxed) || work_queue.try_pop(work); });
-                    if (stop_requested.load(std::memory_order_relaxed)) {
-                        break;
-                    }
-                }
-                if (work.has_value()) {
-                    work.value()();
+    void add_work_internal(std::function<void()> work) {
+        std::unique_lock<std::mutex> lock(queue_mutex);
+        work_queue.push(work);
+        lock.unlock();
+        queue_cv.notify_one();
+    }
+    void worker_thread() {
+        while (true) {
+            std::optional<std::function<void()>> work;
+            {
+                std::unique_lock<std::mutex> lock(queue_mutex);
+                queue_cv.wait(lock, [this]() { return stop_requested.load(std::memory_order_relaxed) || work_queue.try_pop(work); });
+                if (stop_requested.load(std::memory_order_relaxed)) {
+                    break;
                 }
             }
+            if (work.has_value()) {
+                work.value()();
+            }
         }
-    };
+    }
 };
 template <typename T>
 class InputHandle : public NeuralNetwork<T> {
 public:
-    InputHandle(NeuralNetwork<T>::Status change, NeuralNetwork<T>::ChangeHandle handleChanged)
-        : NeuralNetwork<T>(change, handleChanged) {}
-    template<typename T>
-    class RawInput : public NeuralNetwork<T> {
-        std::vector<T>* x1;
-        std::vector<T>* x2;
-        std::vector<T>* x3;
-        std::vector<T>* rawData;
+InputHandle(NeuralNetwork<T>::Status change, NeuralNetwork<T>::ChangeHandle handleChanged)
+: NeuralNetwork<T>(change, handleChanged) {}
+    template <typename T>
+    class RawInput {
+        std::vector<std::variant<int, double, float>> rawData;
     public:
-        T InputHandler()override {
-            return T();
-        }
-        T LayerGeneration()override {
-            return T();
-        }
-        T LayerOrganiser()override {
-            return T();
-        }
-        T CheckOrganisation()override {
-            return T();
-        }
-        T NeuronGeneration()override {
-            return T();
-        }
+        T InputHandler() { return T(); }
+        T LayerGeneration() { return T(); }
+        T LayerOrganiser() { return T(); }
+        T CheckOrganisation() { return T(); }
+        T NeuronGeneration() { return T(); }
+        RawInput() {
+            std::string UserInput;
+            std::vector<std::variant<int, double, float>> DataRaw;
 
-        RawInput() :
-            x1(new std::vector<T>()),
-            x2(new std::vector<T>()),
-            x3(new std::vector<T>()), rawData(new std::vector<T>()) {
-            T dataRaw{};
-            while (std::cin >> dataRaw) {
-                rawData->push_back(dataRaw);
-            }
-            x1->reserve(rawData->size() / 3 + 1);
-            x2->reserve(rawData->size() / 3 + 1);
-            x3->reserve(rawData->size() / 3 + 1);
-            for (int i = 0; i < rawData->size(); i += 3) {
-                x1->push_back((*rawData)[i]);
-                if (i + 1 < rawData->size()) {
-                    x2->push_back((*rawData)[i + 1]);
+            while (std::getline(std::cin, UserInput)) {
+                std::istringstream inputStream(UserInput);
+                std::string data;
+
+                if (inputStream >> data) {
+                    try {
+                        DataRaw.push_back(std::stoi(data));
+                    }
+                    catch (const std::invalid_argument&) {
+                        try {
+                            DataRaw.push_back(std::stod(data));
+                        }
+                        catch (const std::invalid_argument&) {
+                            try {
+                                DataRaw.push_back(std::stof(data));
+                            }
+                            catch (const std::invalid_argument&) {
+                               
+                            }
+                        }
+                    }
                 }
                 else {
-                    x2->push_back(T());
-                }
-                if (i + 2 < rawData->size()) {
-                    x3->push_back((*rawData)[i + 2]);
-                }
-                else {
-                    x3->push_back(T());
+                    if (inputStream.eof()) {
+                        break;
+                    }
+                    inputStream.clear();
                 }
             }
         }
-        ~RawInput() {
-            delete x1;
-            delete x2;
-            delete x3;
-            delete rawData;
-        }
-
-        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() override {
+        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() {
             return GetData();
         }
-
         std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> GetData() const {
-            return std::make_tuple(*x1, *x2, *x3);
+            std::vector<T> x1, x2, x3;
+            const int size = rawData.size();
+            for (int i = 0; i < size; i += 3) {
+                const auto x1_value = std::get_if<T>(&rawData[i]);
+                x1.push_back(x1_value ? *x1_value : T());
+
+                if (i + 1 < size) {
+                    const auto x2_value = std::get_if<T>(&rawData[i + 1]);
+                    x2.push_back(x2_value ? *x2_value : T());
+                }
+                else {
+                    x2.push_back(T());
+                }
+
+                if (i + 2 < size) {
+                    const auto x3_value = std::get_if<T>(&rawData[i + 2]);
+                    x3.push_back(x3_value ? *x3_value : T());
+                }
+                else {
+                    x3.push_back(T());
+                }
+            }
+            return std::make_tuple(x1, x2, x3);
         }
     };
-    template<typename T>
+    template <typename T>
     class InputSystem : public RawInput<T> {
     public:
         std::vector<T> x1;
@@ -317,7 +338,7 @@ public:
             return std::make_tuple(x1, x2, x3);
         }
 
-        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() override {
+        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() {
             return std::make_tuple(x1, x2, x3);
         }
     };
@@ -330,10 +351,20 @@ public:
     std::vector<int> inputIds;
     int neuronId;
     InputHandle::RawInput<T>* inputHand;
-
-    Neuron() : weight(0), bias(0), neuronId(0), inputHand(nullptr) {}
-
+    struct NeuronSpecific {
+        virtual T Activation() = 0;
+        virtual T Loss() = 0;
+        virtual T Optimisation() = 0;
+        virtual T FeedForwards() = 0;
+        virtual T BackPropogation() = 0;
+        virtual T UpdateBiases() = 0;
+        virtual T UpdateWeight() = 0;
+        virtual T NeuronPerformanceEval() = 0;
+    };
+    Neuron() : weight(0), bias(0), neuronId(0), inputHand(nullptr) {
+    }
     T GetInitialInput() {
+
         std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> GotDataInput = inputHand->GetData();
         std::vector<T> x1, x2, x3;
         std::tie(x1, x2, x3) = GotDataInput;
@@ -346,6 +377,45 @@ public:
         }
         return T();
     }
+    class NeuralCoreIntegration : public NeuralNetwork<T>::additionalCoreIntegration {
+    public:
+        bool CoreIntegrationApplied = false;
+        bool coreServiceRunning = false;
+        NeuralCoreIntegration() : NeuralNetwork<T>::additionalCoreIntegration() {
+            coreServiceRunning = true;
+        }
+        T Activation() override {
+            
+            return std::max(T(0), weight * GetInitialInput() + bias);
+        }
+        T Loss() override {
+
+        }
+        T Optimisation() override {
+
+        }
+        T FeedForwards() override {
+
+        }
+        T BackPropogation() override {
+            return std::tanh(weight * GetInitialInput() + bias);
+        }
+        T UpdateBiases() override {
+
+        }
+        T UpdateWeights() override {
+        }
+        T PerformanceEval() override {
+        }
+
+        T NetworkFeedForward() = 0;
+        T NetworkBackPropogation() = 0;
+        T TotalWeights() = 0;
+        T TotalBiases() = 0;
+        T SetTrainingLoop() = 0;
+        T PerformanceEvalNeuronTotal() = 0;
+        T NeuralTrainingLoopSet() = 0;
+    };
     T NeuronGeneration(T inputId) override {
         std::vector<std::shared_ptr<Neuron<T>>> neurons1;
         std::vector<std::shared_ptr<Neuron<T>>> neurons2;
@@ -462,9 +532,15 @@ public:
 };
 template <typename T>
 class TypeInputHandle : public InputHandle<T> {
+    using DataVariant = std::variant<int, double, float>;
+    bool Loaded = false;
+    std::unique_ptr<DataVariant> TypePoint = nullptr;
 public:
-    TypeInputHandle(NeuralNetwork<T>::Status change, NeuralNetwork<T>::ChangeHandle handleChanged) : InputHandle<T>(change, handleChanged) {}
-
+    TypeInputHandle(InputHandle<T>::Status change, InputHandle<T>::ChangeHandle handleChanged)
+        : InputHandle<T>(change, handleChanged) {
+        Loaded = true;
+        TypePoint = std::make_unique<DataVariant>(DataVariant{});
+    }
     T LayerGeneration() override {
         return T();
     }
@@ -488,20 +564,22 @@ public:
     T InputHandler() override {
         return T();
     }
+
     T NetworkScrape() override {
         return T();
     }
+
     T TrainNetwork() override {
         return T();
     }
+
     T SaveModel() override {
         return T();
     }
 };
-int main()
-{
-    TypeInputHandle<int>* inputHandle = new TypeInputHandle<int>(NeuralNetwork<int>::Status::Ready, NeuralNetwork<int>::ChangeHandle::Active);
 
+int main() {
+    TypeInputHandle<int>* inputHandle = new TypeInputHandle<int>(InputHandle<int>::Status::Ready, InputHandle<int>::ChangeHandle::Active);
     return 0;
 }
 /*
