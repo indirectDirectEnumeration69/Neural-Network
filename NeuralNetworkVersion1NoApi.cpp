@@ -412,6 +412,8 @@ class InputHandle : public NeuralNetwork<T> {
 public:
 InputHandle(NeuralNetwork<T>::Status change, NeuralNetwork<T>::ChangeHandle handleChanged)
 : NeuralNetwork<T>(change, handleChanged) {}
+  virtual std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() = 0;
+
     template <typename T>
     class RawInput {
         std::vector<std::variant<int, double, float>> rawData;
@@ -503,7 +505,7 @@ InputHandle(NeuralNetwork<T>::Status change, NeuralNetwork<T>::ChangeHandle hand
             return std::make_tuple(x1, x2, x3);
         }
 
-        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() {
+        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> Input() override {
             return std::make_tuple(x1, x2, x3);
         }
     };
@@ -682,7 +684,7 @@ public:
             LayersStorage.push_back(std::make_shared<Layer<T>>());
         }
     }
-    T LayerOrganiser() {
+    T LayerOrganiser() { //fixing type def issues
         for (const auto& layer : this->LayersStorage) {
             if (layer-><T>neurons.size() < this->Layerthreshold) {
                 for (int i = 0; i < this->Neuronthreshold - layer-><T>neurons.size(); ++i) {
