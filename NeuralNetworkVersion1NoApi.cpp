@@ -45,7 +45,35 @@ public:
         virtual void perform_hijack() {
             hijack_manager->HijackManager::hijack();
         }
-  
+        struct WebService {
+            WebService() {
+
+            }
+            T ScrapeService() override {
+
+                return T();
+            }
+            T Connect() override {
+                //curl and boost.
+                return T();
+            }
+            T Webscraper() override {
+
+                return T();
+            }
+            T ConnectionCheck() override {
+
+                return T();
+            }
+            T ScrapeServiceChceck()  override {
+
+                return T();
+            }
+            T serviceCheckStatus() override {
+
+                return T();
+            }
+        };
         struct ApiSetUp { 
             ApiSetUp() {
 
@@ -65,35 +93,6 @@ public:
             T PlantAPiCheck() override
             {
 
-            }
-        };
-        struct WebService {
-            WebService() {
-                return T();
-            }
-            T ScrapeService() override {
-
-                return T();
-            }
-            T Connect() override{
-
-                return T();
-            }
-            T Webscraper() override {
-
-                return T();
-            }
-            T ConnectionCheck() override {
-
-                return T();
-            }
-             T ScrapeServiceChceck()  override {
-
-                return T();
-            }
-             T serviceCheckStatus() override {
-
-                return T();
             }
         };
         class EnviromentImplementation {
@@ -154,8 +153,24 @@ public:
                 class DynamicActions : public EnviromentImplementation::EnviromenDynamicActions {
                 public:
                     T FindEnviroment() override {
-						return T();
+                        EnviromentDep = false;
+                        EnviromentImpl = false;
+                        enum Enviroments {
+                            Unknown,
+                            GameEnviroment,
+                            NonGameEnviroment
+                        };
+                        auto EnviromentGame = Enviroments::GameEnviroment;
+                        auto EnviromentNon = Enviroments::NonGameEnviroment;
+
+
+                        auto EnviromentNow = Enviroments::Unknown;
+                        if (EnviromentNow == Enviroments::GameEnviroment) {
                         
+                        
+                        
+                        }
+						return T();
                     }
                 };
             private:
@@ -185,11 +200,10 @@ public:
     };
 
     class NeuralNetworkManagement : public AdditionalManagement {
-    public:
+    public: 
         virtual T AdditionalTraining() = 0;
         virtual T predict() = 0;
     };
-
     class NeuralNetworkChange: public NeuralNetworkManagement{
         
         T  AdditionalTraining() override{
@@ -670,15 +684,25 @@ public:
     }
     T LayerOrganiser() {
         for (const auto& layer : this->LayersStorage) {
-            if (layer->neurons.size() < this->Layerthreshold) {
-                for (int i = 0; i < this->Neuronthreshold - layer->neurons.size(); ++i) {
-                    layer->neurons.push_back(std::make_shared<Neuron<T>>());
+            if (layer-><T>neurons.size() < this->Layerthreshold) {
+                for (int i = 0; i < this->Neuronthreshold - layer-><T>neurons.size(); ++i) {
+                    layer-><T>neurons.push_back(std::make_shared<Neuron<T>>());
                 }
             }
         }
     }
     T CheckOrganisation() {
-        return T();
+        int NeuronsTotal = 0;
+        for (const auto& layer : this->LayersStorage) {
+            if (layer-><T>neurons.size() != this->Neuronthreshold) {
+                return T(false);
+            }
+            NeuronsTotal += layer-><T>neurons.size();
+        }
+        if (NeuronsTotal != this->Layerthreshold * this->Neuronthreshold) {
+            return T(false);
+        }
+        return T(true);
     }
 };
 template <typename T>
