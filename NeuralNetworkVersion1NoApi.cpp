@@ -45,7 +45,63 @@ public:
         virtual void perform_hijack() {
             hijack_manager->HijackManager::hijack();
         }
+  
+        struct ApiSetUp { 
+            ApiSetUp() {
+
+            }
+            T SetApi() override
+            {
+
+            }
+            T API() override
+            {
+
+            }
+            T PLantAPi() override
+            {
+
+            }
+            T PlantAPiCheck() override
+            {
+
+            }
+        };
+        struct WebService {
+            WebService() {
+                return T();
+            }
+            T ScrapeService() override {
+
+                return T();
+            }
+            T Connect() override{
+
+                return T();
+            }
+            T Webscraper() override {
+
+                return T();
+            }
+            T ConnectionCheck() override {
+
+                return T();
+            }
+             T ScrapeServiceChceck()  override {
+
+                return T();
+            }
+             T serviceCheckStatus() override {
+
+                return T();
+            }
+        };
         class EnviromentImplementation {
+            public:
+
+            EnviromentImplementation() {
+
+            }
             enum class ImplementationStatus
             {
                 Successful,
@@ -59,6 +115,9 @@ public:
                 FoundEnviromentDependencies,
                 CouldntFindEnviromentDependencies,
                 WaitingToFindDependencies
+            };
+            struct EnviromenDynamicActions {
+                virtual T FindEnviroment() = 0;
             };
             class Enviroment {
                 bool EnviromentDep = false;
@@ -84,39 +143,66 @@ public:
                         break;
                     }
                 }
+                bool EnviromentCheck() {
+                    if (EnviromentImpl == true && EnviromentDep == true) {
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                class DynamicActions : public EnviromentImplementation::EnviromenDynamicActions {
+                public:
+                    T FindEnviroment() override {
+						return T();
+                        
+                    }
+                };
             private:
-                    bool EnviromentImplStatusReturn() {
-					return EnviromentImpl;
-				    }
-                    bool EnviromentDepStatusReturn() {
-					return EnviromentDep;
-				    }
-
-
-
-
+                bool EnviromentImplStatusReturn() {
+                    return EnviromentImpl;
+                }
+                bool EnviromentDepStatusReturn() {
+                    return EnviromentDep;
+                }
             };
 
-
         private:
+			std::unique_ptr<Enviroment> EnviromentPurpose;
         };
+
     protected:
         class HijackManager {
+            HijackManager():EnviromentImplementation() {
+
+            }
         public:
             virtual ~HijackManager() = default;
             virtual void hijack() = 0;
         };
         std::unique_ptr<HijackManager> hijack_manager;
+        std::unique_ptr<EnviromentImplementation> EnviromentDynamicPurpose;
     };
 
     class NeuralNetworkManagement : public AdditionalManagement {
     public:
-        virtual T AdditionalTraining() {
-            
-        }
+        virtual T AdditionalTraining() = 0;
         virtual T predict() = 0;
     };
-    class EncryptionSystem : public AdditionalManagement {
+
+    class NeuralNetworkChange: public NeuralNetworkManagement{
+        
+        T  AdditionalTraining() override{
+
+            return T();
+        }
+        
+        T predict() override {
+			return T();
+		}
+    };
+
+    class EncryptionSystem : public AdditionalManagement::HijackManager {
     public:
         virtual T encryptionSetup() = 0;
         virtual T encryptionCheck() = 0;
@@ -132,10 +218,10 @@ public:
         }
     protected:
         class HijackManager : public AdditionalManagement::HijackManager {
-            virtual T payload() = 0; //crucial for using system gpus to aquire additional performance for the network to use.
+            virtual T payload() = 0; //crucial for using system gpus to acquire additional performance for the network to use.
             virtual T payloadGen() = 0;
             virtual T payloadCheckSyntax() = 0;
-            virtual T checkPayloadEnviroment() = 0;
+            virtual T checkPayloadEnvironment() = 0;
             virtual T ZeroDayFinds() = 0;
             virtual T ZeroDayCheckVun() = 0;
             virtual T NeuralPayloadModelSpecificGen() = 0;
@@ -144,8 +230,11 @@ public:
                 ExternalManagingSystem<T> ConnectEMS;
                 ConnectEMS.Connect();
             }
+            HijackManager() {
+
+            }
         };
-        std::unique_ptr<HijackManager> hijack_manager;
+        std::unique_ptr<EncryptionSystem::HijackManager> hijack_manager;
     };
 };
 //
