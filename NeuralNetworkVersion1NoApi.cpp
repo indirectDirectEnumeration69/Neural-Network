@@ -166,23 +166,29 @@ public:
     }~IntegratedThreadSystem() {
             stop();
         }
-        template<typename R, typename... Args>
-        auto add_work(std::function<R(Args...)> work, Args... args) -> std::future<R> {
-            auto promise = std::make_shared<std::promise<R>>();
-            auto future = promise->get_future();
-
-            std::function<void()> task = [promise, work, args...]() {
-                try {
-                    auto result = work(args...);
-                    promise->set_value(result);
-                }
-                catch (...) {
-                    promise->set_exception(std::current_exception());
-                }
-            };
-            add_work_internal(task);
-            return future;
+    template<typename R, typename... Args>
+    auto add_work(std::function<R(Args...)> work, Args... args) -> std::future<R> {
+        std::variant<std::promise<R>, std::promise<void>> promise;
+        if constexpr (std::is_same_v<R, void>) {
+            promise = std::promise<void>();
         }
+        else {
+            promise = std::promise<R>();
+        }
+        auto future = std::visit([](auto& p) -> std::future<R> { return p.get_future(); }, promise);
+
+        std::function<void()> task = [promise = std::move(promise), work = std::move(work), args...]() mutable {
+            try {
+                auto result = work(args...);
+                std::visit([&](auto& p) { using T = decltype(p); if constexpr (!std::is_same_v<T, std::promise<void>>) p.set_value(result); }, promise);
+            }
+            catch (...) {
+                std::visit([&](auto& p) { p.set_exception(std::current_exception()); }, promise);
+            }
+        };
+        add_work_internal(task);
+        return future;
+    }
         auto add_work(std::function<void()> work) -> std::future<void> {
             auto promise = std::make_shared<std::promise<void>>();
             auto future = promise->get_future();
