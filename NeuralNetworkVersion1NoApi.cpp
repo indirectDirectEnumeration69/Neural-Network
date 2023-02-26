@@ -45,6 +45,61 @@ public:
         virtual void perform_hijack() {
             hijack_manager->HijackManager::hijack();
         }
+        class EnviromentImplementation {
+            enum class ImplementationStatus
+            {
+                Successful,
+                Failed,
+                Waiting,
+                Loading,
+                CantFindEnv,
+                FoundEnviroment
+            };
+            enum class EnviromentDependencies {
+                FoundEnviromentDependencies,
+                CouldntFindEnviromentDependencies,
+                WaitingToFindDependencies
+            };
+            class Enviroment {
+                bool EnviromentDep = false;
+                bool EnviromentImpl = false;
+                Enviroment() {
+                    auto EnvImpstatus = ImplementationStatus::Waiting;
+                    auto Depstatus = EnviromentDependencies::WaitingToFindDependencies;
+                    switch (EnvImpstatus) {
+                    case ImplementationStatus::Waiting:
+                        EnviromentImpl = false;
+                        break;
+                    default:
+                        EnviromentImpl = true;
+                        break;
+                    }
+
+                    switch (Depstatus) {
+                    case EnviromentDependencies::WaitingToFindDependencies:
+                        EnviromentDep = false;
+                        break;
+                    default:
+                        EnviromentDep = true;
+                        break;
+                    }
+                }
+            private:
+                    bool EnviromentImplStatusReturn() {
+					return EnviromentImpl;
+				    }
+                    bool EnviromentDepStatusReturn() {
+					return EnviromentDep;
+				    }
+
+
+
+
+            };
+
+
+        private:
+        };
     protected:
         class HijackManager {
         public:
@@ -53,6 +108,7 @@ public:
         };
         std::unique_ptr<HijackManager> hijack_manager;
     };
+
     class NeuralNetworkManagement : public AdditionalManagement {
     public:
         virtual T AdditionalTraining() {
