@@ -32,9 +32,22 @@ class Trainer:NeuralNetwork<T> {
     virtual T StartNetwork() = 0;
 };
 
+class VCPKG {
+    bool VCPKGpacksFound = false;
+    bool VCPKGimplemented = false;
+    bool additionalDependenciesChecks = false;
+    std::vector<std::string> VCPKpacks;
+    std::vector<std::string> VCPKpacksFound;
+    VCPKG():VCPKGpacksFound(false), VCPKGimplemented(false), additionalDependenciesChecks(false) {
+       
+        
+    }
+
+
+};
 
 template <typename T>
-class ExternalManagingSystem:Trainer<T>{
+class ExternalManagingSystem : public Trainer<T>, public VCPKG {
 public:
     virtual T SetApi() = 0;
     virtual T API() = 0;
@@ -165,8 +178,10 @@ public:
                 virtual T FindEnviroment() = 0;
             };
             class Enviroment {
+            public:
                 bool EnviromentDep = false;
                 bool EnviromentImpl = false;
+                VCPKG vcpkg;
                 Enviroment() {
                     auto EnvImpstatus = ImplementationStatus::Waiting;
                     auto Depstatus = EnviromentDependencies::WaitingToFindDependencies;
@@ -182,6 +197,10 @@ public:
                     switch (Depstatus) {
                     case EnviromentDependencies::WaitingToFindDependencies:
                         EnviromentDep = false;
+                        vcpkg = VCPKG();
+                        if (vcpkg.VCPKGpacksFound == true) {
+                            EnviromentDep = true;
+                        }
                         break;
                     default:
                         EnviromentDep = true;
@@ -471,6 +490,40 @@ private:
         }
     }
 };
+template<typename T>
+class CallThreadSystem:NeuralNetwork<T>{
+public:
+
+    struct ThreadInfoOnCall {
+
+        ThreadInfoOnCall() : () {};
+    };
+
+    bool* ThreadCalls = new bool[2];
+
+    IntegratedThreadSystem<T> ThreadSystem;
+    NeuralNetwork<T>::NeuralMode<T> NetworkMode;
+    NeuralNetwork<T>::ChangeHandle<T> NetworkBehaviour;
+    NeuralNetwork<T>::Status<T> NetworkStatus;
+
+
+
+    CallThreadSystem() : ThreadSystem(), NetworkMode(), NetworkBehaviour(), NetworkStatus(), ThreadCalls{ false, false } {};
+    ~CallThreadSystem() {
+		delete[] ThreadCalls;
+	};
+    std::function<IntegratedThreadSystem<T>()> IntegralThreadNeedHandling = [&]() -> IntegratedThreadSystem<T>{
+
+       
+
+
+
+
+        return ThreadSystem;
+    };
+};
+
+
 template <typename T>
 class InputHandle : public NeuralNetwork<T> {
 public:
@@ -582,6 +635,9 @@ public:
     std::vector<int> inputIds;
     int neuronId;
     InputHandle::RawInput<T>* inputHand;
+    bool DataRecieved = false;
+    bool FinalDatacheck = false;
+    std::vector<std::pair<T, T>>* NeuronData = nullptr;
     struct NeuronSpecific {
         virtual T Activation() = 0;
         virtual T Loss() = 0;
@@ -595,28 +651,54 @@ public:
     Neuron() : weight(0), bias(0), neuronId(0), inputHand(nullptr) {
     }
     T GetInitialInput() {
-
-        std::tuple<std::vector<T>, std::vector<T>, std::vector<T>> GotDataInput = inputHand->GetData();
-        std::vector<T> x1, x2, x3;
-        std::tie(x1, x2, x3) = GotDataInput;
-        int DataSize = x1.size();
-        bool* inputFlagCheck = new bool[DataSize];
-        inputIds.resize(DataSize);
-        for (int i = 0; i < DataSize; ++i) {
+        auto GotDataInput = inputHand->GetData();
+        std::vector<T>& x1 = std::get<0>(gotDataInput);
+        std::vector<T>& x2 = std::get<1>(gotDataInput);
+        std::vector<T>& x3 = std::get<2>(gotDataInput);
+        std::size_t dataSize = std::max({ x1.size(), x2.size(), x3.size() });
+        std::vector<bool> inputFlagCheck(dataSize);
+        inputIds.resize(dataSize);
+        for (std::size_t i = 0; i < dataSize; ++i) {
             inputIds[i] = i;
-            inputFlagCheck[i] = false;
+            inputFlagCheck[i] = (i < x1.size() && i < x2.size() && i < x3.size());
         }
-        return T();
+        DataRecieved = std::any_of(inputFlagCheck.begin(), inputFlagCheck.end(), [&](bool EmpCheck) {
+            return EmpCheck;
+            });
+        
+        FinalDatacheck = DataRecieved;
+
+        switch (FinalDatacheck) {
+            case false:
+
+                return dataSize;
+
+            case true: 
+
+
+
+
+
+
+                return T();
+        }
+    
     }
     class NeuralCoreIntegration : public NeuralNetwork<T>::additionalCoreIntegration {
     public:
         bool CoreIntegrationApplied = false;
         bool coreServiceRunning = false;
         NeuralCoreIntegration() : NeuralNetwork<T>::additionalCoreIntegration() {
-            coreServiceRunning = true;
+            coreServiceRunning = true; 
         }
         T Activation() override {
-            
+            auto initial_input = GetInitialInput();
+            if (initial_input) {
+                return std::max(T(0), weight * *initial_input + bias);
+            }
+            else {
+                
+            }
             return std::max(T(0), weight * GetInitialInput() + bias);
         }
         T Loss() override {
