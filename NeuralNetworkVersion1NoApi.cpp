@@ -22,8 +22,19 @@
 #include <tuple>
 #include <type_traits>
 #include <variant>
+
+
+template<typename T>
+class NeuralNetwork; //forward declaring for now.
+template<typename T>
+class Trainer:NeuralNetwork<T> {
+    virtual T TrainNetwork() = 0;
+    virtual T StartNetwork() = 0;
+};
+
+
 template <typename T>
-class ExternalManagingSystem {
+class ExternalManagingSystem:Trainer<T>{
 public:
     virtual T SetApi() = 0;
     virtual T API() = 0;
@@ -74,17 +85,52 @@ public:
                 return T();
             }
         };
-        struct ApiSetUp { 
-            ApiSetUp() {
-
+        struct ApiSetUp{
+            ApiSetUp() {}
+            T SetApi() override {
+                struct ApiInfomation {
+                    std::unique_ptr<EncryptionSystem> EncryptionKey;
+                    float ApiNumber;
+                    std::string ApiName;
+                    ApiInfomation() : EncryptionKey(std::make_unique<EncryptionSystem>()), ApiNumber(0.0), ApiName("") {}
+                };
+                float num = 0;
+                std::function<ApiInfomation()> ApiSetUp = [&num]() {
+                    ApiInfomation ApiInfo;
+                    ApiInfo.EncryptionKey = std::make_unique<EncryptionSystem>();
+                    ApiInfo.ApiNumber = num++;
+                    ApiInfo.ApiName = "NewNetworkApi";
+                    return ApiInfo;
+                };
+                return ApiSetUp();
             }
-            T SetApi() override
-            {
-
-            }
+            
             T API() override
             {
+                T ApiConnection = WebService::Connect();
+                T ApiSetup = SetApi();
+                std::function<ApiInfomation()> ApiKeyGeneration = [&ApiSetup]() {
 
+                    if (ApiConnection == false) {
+
+
+
+
+                        ApiConnection = WebService::ConnectionCheck();
+
+                        if (ApiConnection == false) {
+
+
+
+
+                            return ApiConnection;
+                        }
+                        return ApiConnection;
+                  }
+
+
+
+                };
             }
             T PLantAPi() override
             {
@@ -95,7 +141,7 @@ public:
 
             }
         };
-        class EnviromentImplementation {
+        class EnviromentImpleMentation {
             public:
 
             EnviromentImplementation() {
@@ -162,13 +208,31 @@ public:
                         };
                         auto EnviromentGame = Enviroments::GameEnviroment;
                         auto EnviromentNon = Enviroments::NonGameEnviroment;
-
-
-                        auto EnviromentNow = Enviroments::Unknown;
+                        int Version = 0000;
+                        std::vector<int> StdVersionComaptible = { 1998, 2003, 2011, 2014, 2017, 2020 };
+                        bool CurrentlyCompatible = false;
+                        std::string EngineName = "";
+                        int Version = StdVersionComaptible.at(0);
+                        if (EnviromentDep && EnviromentImpl == false) {
+                            auto EnviromentNow = Enviroments::Unknown;
+                        }
                         if (EnviromentNow == Enviroments::GameEnviroment) {
-                        
-                        
-                        
+                            try {
+                                std::function<void()> GetGameEnviroment = [&]() {
+                                    NeuralNetwork<T>* NeuralNetStart = new NeuralNetwork<T>(NeuralNetwork<T>::Status::Ready, NeuralNetwork<T>::ChangeHandle::Passive);
+
+
+
+
+
+                                    Version = StdVersionComaptible.at(3);
+                                };
+                            }
+                            catch (...) {
+                                std::exception_ptr current_exception = std::current_exception();
+                                std::rethrow_exception(current_exception);
+                                Version = 0000;
+                            }
                         }
 					return T();
                     }
@@ -768,5 +832,14 @@ int main() {
 * Will be broken down into headers and modules for each class where i need to.
 * 
 * can do that in main , still compiles however needs to still be addressed ,simply just need to assert types for compile conditions.
+* 
+* 
+* Structure maybe abit more optimisation and ill need some additional implemntation of boost and unreal engine version checking but ill have to check based on 2 options 1. i use current std 20 to check 
+* but if the version is not compatible with the newer version of std it will fail.
+* , this can be fixed with std14 compatible functionality hence why ive went for a flexible dynamic network , however functionality to rewrite the classes and replace them with c++ 14 compatible functions will be done.
+* Or in Engine source code compatibility fixing for std::20 can be done dynamically possibly .
+* 
+* 
+* more errors due to additional implementation , also i need to use the vpkg packages for the boost libs for the boost network activity, ill just do it in terminal for the gitclone.
 * */
 
