@@ -1,6 +1,6 @@
 # Neural-Network
 
 
-Updating readme when i have more energy
+Updating readme.... |-8
 - 
 8/
