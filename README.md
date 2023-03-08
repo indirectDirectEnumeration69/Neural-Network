@@ -1,6 +1,3 @@
 # Neural-Network
 
-
-Updating readme.... |-8
-- 
-8/
+workin version of the bigger project.
